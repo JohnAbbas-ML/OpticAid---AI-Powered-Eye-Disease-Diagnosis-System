@@ -1,1 +1,0 @@
-# OpticAid---AI-Powered-Eye-Disease-Diagnosis-System
