@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eye Disease Classifier</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="p-6">
+                <h1 class="text-3xl font-bold text-center text-blue-600 mb-6">
+                    Optic Aid: AI Powered Eye Disease Detection System
+                </h1>
+
+                <div class="mb-6">
+                    <form id="uploadForm" class="flex flex-col items-center">
+                        <input type="file" 
+                               id="imageUpload" 
+                               accept="image/*" 
+                               class="hidden"
+                               onchange="uploadImage(event)">
+                        <label for="imageUpload" 
+                               class="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300">
+                            Upload Eye Image
+                        </label>
+                        
+                        <div id="imagePreview" class="mt-4 max-w-md">
+                            <!-- Image preview will be shown here -->
+                        </div>
+                    </form>
+                </div>
+
+                <div id="resultSection" class="hidden mt-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Prediction Result</h2>
+                            <div id="predictionResult" class="bg-gray-100 p-4 rounded-lg">
+                                <!-- Prediction details will be shown here -->
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Probability Distribution</h2>
+                            <canvas id="probabilityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function uploadImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            const resultSection = document.getElementById('resultSection');
+            const predictionResult = document.getElementById('predictionResult');
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="rounded-lg shadow-md max-h-72 mx-auto">`;
+                    
+                    // Prepare form data
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    // Send prediction request
+                    fetch('/predict', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Display prediction result
+                        predictionResult.innerHTML = `
+                            <p class="font-bold text-lg">Predicted Disease: 
+                                <span class="text-blue-600">${data.predicted_class}</span>
+                            </p>
+                            <div class="mt-2">
+                                <h3 class="font-semibold">Probabilities:</h3>
+                                <ul class="list-disc pl-5">
+                                    ${Object.entries(data.probabilities)
+                                        .map(([cls, prob]) => 
+                                            `<li>${cls}: ${(prob * 100).toFixed(2)}%</li>`
+                                        )
+                                        .join('')}
+                                </ul>
+                            </div>
+                        `;
+
+                        // Create probability chart
+                        createProbabilityChart(data.probabilities);
+
+                        resultSection.classList.remove('hidden');
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        predictionResult.innerHTML = 'An error occurred during prediction.';
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function createProbabilityChart(probabilities) {
+            const ctx = document.getElementById('probabilityChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(probabilities),
+                    datasets: [{
+                        label: 'Probability',
+                        data: Object.values(probabilities).map(p => p * 100),
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(255, 99, 132, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(255, 206, 86, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 206, 86, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Probability (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
