@@ -13,7 +13,7 @@ Welcome to **OpticAid**, a deep learning-based Flask web application for detecti
 ├── Data/                    # Image dataset
 ├── templates/
 │   └── index.html           # Frontend (HTML + TailwindCSS + Chart.js)
-└── README.md                # Project description (this file)
+└── README.md                # Project description
 ```
 
 ---
